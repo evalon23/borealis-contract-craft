@@ -6,7 +6,8 @@ import {
   AlignmentType,
   HeadingLevel,
 } from "docx";
-import { saveAs } from "file-saver";
+import fileSaver from "file-saver";
+const { saveAs } = fileSaver;
 
 export interface ExportPayload {
   number: string;

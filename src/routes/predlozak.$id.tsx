@@ -9,7 +9,6 @@ import {
   EMPTY_VARS,
   addHistory,
   consumeNextNumber,
-  fillTemplate,
   loadHistory,
   peekNextNumber,
   updateHistory,

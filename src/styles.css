@@ -33,6 +33,7 @@
   --color-brand-purple: var(--brand-purple);
   --color-brand-teal: var(--brand-teal);
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-contract: "Calibri", "Carlito", sans-serif;
 }
 
 :root {
@@ -77,13 +78,20 @@
 .contract-paper {
   background: white;
   color: #1a1a1a;
-  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
-  font-size: 10.5pt;
-  line-height: 1.55;
+  font-family: "Calibri", "Carlito", sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
 }
 .contract-paper h1,
 .contract-paper h2,
 .contract-paper h3 {
-  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-family: "Calibri", "Carlito", sans-serif;
   color: #1a1a1a;
 }
+/* Rich text content inside contract body */
+.contract-paper .rt-content p { margin: 0 0 0.5rem 0; text-align: justify; }
+.contract-paper .rt-content ul { list-style: disc; padding-left: 1.25rem; margin: 0 0 0.5rem 0; }
+.contract-paper .rt-content ol { list-style: decimal; padding-left: 1.25rem; margin: 0 0 0.5rem 0; }
+.contract-paper .rt-content li { margin-bottom: 0.15rem; }
+.contract-paper .rt-content strong { font-weight: 700; }
+.contract-paper .rt-content em { font-style: italic; }

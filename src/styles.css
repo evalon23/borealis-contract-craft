@@ -73,17 +73,17 @@
   }
 }
 
-/* Contract preview paper styles */
+/* Contract preview paper styles — match Borealis docx look */
 .contract-paper {
   background: white;
-  color: #0a0a0a;
-  font-family: "Georgia", "Times New Roman", serif;
-  line-height: 1.6;
-  font-size: 11pt;
+  color: #1a1a1a;
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.55;
 }
-.contract-paper h1, .contract-paper h2, .contract-paper h3 {
-  font-family: "Inter", sans-serif;
-}
-.contract-paper .contract-body {
-  white-space: pre-wrap;
+.contract-paper h1,
+.contract-paper h2,
+.contract-paper h3 {
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  color: #1a1a1a;
 }

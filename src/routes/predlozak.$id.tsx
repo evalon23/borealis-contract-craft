@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-r
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { ContractForm } from "@/components/ContractForm";
-import { ContractPreview } from "@/components/ContractPreview";
+import { ContractPreview, type ContractPreviewHandle } from "@/components/ContractPreview";
 import { Button } from "@/components/ui/button";
 import { getTemplate, type TemplateId } from "@/lib/templates";
 import {
@@ -47,7 +47,7 @@ function TemplatePage() {
   );
   const [saved, setSaved] = useState<boolean>(!!existing);
   const [savedId, setSavedId] = useState<string | undefined>(existing?.id);
-  const previewRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<ContractPreviewHandle>(null);
 
   useEffect(() => {
     if (!existing) setNumber(peekNextNumber());
@@ -89,9 +89,10 @@ function TemplatePage() {
 
   const handlePdf = async () => {
     ensureSaved();
-    if (!previewRef.current) return;
+    const el = previewRef.current?.getPrintElement();
+    if (!el) return;
     try {
-      await exportPdf(previewRef.current, `${baseFilename()}.pdf`);
+      await exportPdf(el, `${baseFilename()}.pdf`);
       toast.success("PDF preuzet");
     } catch {
       toast.error("Greška pri izradi PDF-a");
@@ -153,9 +154,8 @@ function TemplatePage() {
                 vars={vars}
               />
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Pregled se ažurira u stvarnom vremenu. Nepopunjena polja neće se
-              prikazati.
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              A4 pregled — koristite strelice za navigaciju kroz stranice.
             </p>
             <div className="mt-4">
               <Link

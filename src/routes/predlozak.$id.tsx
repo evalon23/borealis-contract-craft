@@ -102,9 +102,13 @@ function TemplatePage() {
   const handleDocx = async () => {
     ensureSaved();
     try {
-      const body = fillTemplate(template.body, vars);
       await exportDocx(
-        { number, templateTitle: template.title, body },
+        {
+          number,
+          templateTitle: template.title,
+          body: template.body,
+          vars,
+        },
         `${baseFilename()}.docx`,
       );
       toast.success("Word dokument preuzet");

@@ -2,6 +2,7 @@ import type { ContractVars } from "@/lib/contract";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 interface Props {
   vars: ContractVars;
@@ -32,13 +33,25 @@ export function ContractForm({ vars, onChange }: Props) {
   const field = (
     key: keyof ContractVars,
     label: string,
-    opts: { type?: string; textarea?: boolean; full?: boolean; rows?: number } = {},
+    opts: {
+      type?: string;
+      textarea?: boolean;
+      rich?: boolean;
+      full?: boolean;
+      rows?: number;
+    } = {},
   ) => (
     <div className={opts.full ? "md:col-span-2" : undefined}>
       <Label className="mb-1 block text-xs font-medium text-neutral-700">
         {label}
       </Label>
-      {opts.textarea ? (
+      {opts.rich ? (
+        <RichTextEditor
+          value={vars[key]}
+          onChange={(html) => set(key, html)}
+          rows={opts.rows ?? 4}
+        />
+      ) : opts.textarea ? (
         <Textarea
           rows={opts.rows ?? 3}
           value={vars[key]}
@@ -68,12 +81,12 @@ export function ContractForm({ vars, onChange }: Props) {
       <Section title="Projekt">
         {field("PROJECT_NAME", "Naziv projekta", { full: true })}
         {field("PROJECT_SCOPE", "Opis predmeta ugovora", {
-          textarea: true,
+          rich: true,
           full: true,
           rows: 4,
         })}
         {field("SERVICE_LIST", "Lista usluga", {
-          textarea: true,
+          rich: true,
           full: true,
           rows: 6,
         })}
@@ -99,7 +112,7 @@ export function ContractForm({ vars, onChange }: Props) {
 
       <Section title="Ostalo">
         {field("SPECIAL_CONDITIONS", "Posebni uvjeti / napomene", {
-          textarea: true,
+          rich: true,
           full: true,
           rows: 3,
         })}

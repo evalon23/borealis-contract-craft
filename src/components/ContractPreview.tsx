@@ -1,7 +1,18 @@
-import { forwardRef } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { ContractVars } from "@/lib/contract";
 import { fillTemplate } from "@/lib/contract";
-import logo from "@/assets/borealis-logo.jpg";
+import { BRAND } from "@/lib/branding";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Props {
   number: string;
@@ -10,113 +21,316 @@ interface Props {
   vars: ContractVars;
 }
 
-function Letterhead() {
+export interface ContractPreviewHandle {
+  /** Returns an off-screen element containing ALL pages stacked, for PDF export. */
+  getPrintElement: () => HTMLElement | null;
+}
+
+// A4 at 96dpi: 210mm x 297mm -> ~794 x 1123 px. We use mm in CSS so print is 1:1.
+const PAGE_HEIGHT_MM = 297;
+const PAGE_MARGIN_MM = 20; // top/bottom
+const HEADER_RESERVE_MM = 22; // header strip + gap
+const FOOTER_RESERVE_MM = 10; // footer line
+const CONTENT_HEIGHT_MM =
+  PAGE_HEIGHT_MM - 2 * PAGE_MARGIN_MM - HEADER_RESERVE_MM - FOOTER_RESERVE_MM;
+
+// Approx px-per-mm at our rendered scale (we render in mm via CSS -> 1mm ≈ 3.78px @ 96dpi)
+const MM_PER_PX = 1 / 3.7795;
+
+// ------- Block model -------
+type Block =
+  | { kind: "h2"; text: string }
+  | { kind: "h3"; text: string }
+  | { kind: "p"; text: string }
+  | { kind: "html"; html: string }
+  | { kind: "spacer" }
+  | { kind: "signature" };
+
+/** Inline **bold** parser for plain-text lines. */
+function inlineBold(line: string): ReactNode[] {
+  return line.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
+    p.startsWith("**") && p.endsWith("**") ? (
+      <strong key={j}>{p.slice(2, -2)}</strong>
+    ) : (
+      <span key={j}>{p}</span>
+    ),
+  );
+}
+
+/** Parse the filled template into an ordered list of blocks. */
+function parseBlocks(filled: string): Block[] {
+  const blocks: Block[] = [];
+  const lines = filled.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trimEnd();
+    if (line === "") {
+      blocks.push({ kind: "spacer" });
+      continue;
+    }
+    if (line === "@@SIGNATURE@@") {
+      blocks.push({ kind: "signature" });
+      continue;
+    }
+    if (line.startsWith("## ")) {
+      blocks.push({ kind: "h2", text: line.slice(3) });
+      continue;
+    }
+    if (line.startsWith("### ")) {
+      blocks.push({ kind: "h3", text: line.slice(4) });
+      continue;
+    }
+    // A line may contain HTML (from rich editor). Detect any block-level tag.
+    if (/<(p|ul|ol|h[1-6]|li|div|br)\b/i.test(line) || /^<\w+/.test(line)) {
+      blocks.push({ kind: "html", html: line });
+      continue;
+    }
+    blocks.push({ kind: "p", text: line });
+  }
+  return blocks;
+}
+
+function BlockView({ block, vars }: { block: Block; vars: ContractVars }) {
+  switch (block.kind) {
+    case "h2":
+      return (
+        <h2 className="mt-4 mb-2 text-center text-[12pt] font-bold uppercase tracking-wide">
+          {block.text}
+        </h2>
+      );
+    case "h3":
+      return (
+        <h3 className="mt-3 mb-2 text-center text-[11pt] font-bold">
+          {block.text}
+        </h3>
+      );
+    case "p":
+      return (
+        <p className="mb-2 text-justify text-[11pt] leading-[1.5]">
+          {inlineBold(block.text)}
+        </p>
+      );
+    case "html":
+      return (
+        <div
+          className="rt-content mb-2 text-[11pt] leading-[1.5]"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: block.html }}
+        />
+      );
+    case "spacer":
+      return <div className="h-2" />;
+    case "signature":
+      return <SignatureBlock vars={vars} />;
+  }
+}
+
+function SignatureBlock({ vars }: { vars: ContractVars }) {
   return (
-    <div className="flex items-start justify-between gap-4 pb-4">
-      <img src={logo} alt="Borealis" className="h-10 w-auto object-contain" />
-      <div className="flex flex-1 items-start justify-around gap-4 text-[9pt] text-neutral-800">
-        <div className="flex flex-col items-center">
-          <span className="mb-1 text-[color:var(--primary)]">▦</span>
-          <span className="text-center leading-tight">
-            Borealis d.o.o.
-            <br />
-            development &amp; design
-          </span>
+    <div className="mt-8 grid grid-cols-2 gap-10 text-[11pt]">
+      <div>
+        <div className="mb-1 font-bold">NARUČITELJ:</div>
+        <div className="mt-10 border-t border-neutral-800 pt-1">
+          {vars.PARTNER_REP || "\u00A0"}
+          {vars.PARTNER_REP_TITLE ? `, ${vars.PARTNER_REP_TITLE}` : ""}
         </div>
-        <div className="flex flex-col items-center">
-          <span className="mb-1 text-[color:var(--primary)]">◎</span>
-          <span className="text-center leading-tight">
-            Ljutomerska 7,
-            <br />
-            10000 Zagreb
-          </span>
+        <div className="text-[10pt] text-neutral-600">
+          {vars.PARTNER_NAME}
         </div>
-        <div className="flex flex-col items-center">
-          <span className="mb-1 text-[color:var(--primary)]">◍</span>
-          <span className="text-center leading-tight">
-            borealis.agency
-            <br />
-            info@borealis.biz
-          </span>
+      </div>
+      <div>
+        <div className="mb-1 font-bold">IZVOĐAČ:</div>
+        <div className="mt-10 border-t border-neutral-800 pt-1">
+          {vars.BOREALIS_REP || "Dennis Puzak"}, Direktor
         </div>
+        <div className="text-[10pt] text-neutral-600">Borealis d.o.o.</div>
       </div>
     </div>
   );
 }
 
-/**
- * Renders the contract body. Supports very light markup in templates:
- *   ## Heading     -> centered uppercase section heading
- *   ### Članak X.  -> centered bold article heading
- *   **bold** inline bold
- * Lines are otherwise justified paragraphs.
- */
-function renderBody(text: string) {
-  const lines = text.split("\n");
-  return lines.map((raw, i) => {
-    const line = raw.trimEnd();
-    if (line === "") return <div key={i} className="h-3" />;
-    if (line.startsWith("## ")) {
-      return (
-        <h2
-          key={i}
-          className="mt-5 mb-3 text-center text-[11pt] font-bold uppercase tracking-wide"
-        >
-          {line.slice(3)}
-        </h2>
-      );
-    }
-    if (line.startsWith("### ")) {
-      return (
-        <h3 key={i} className="mt-3 mb-2 text-center text-[11pt] font-bold">
-          {line.slice(4)}
-        </h3>
-      );
-    }
-    // inline **bold**
-    const parts = line.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
-      p.startsWith("**") && p.endsWith("**") ? (
-        <strong key={j}>{p.slice(2, -2)}</strong>
-      ) : (
-        <span key={j}>{p}</span>
-      ),
-    );
-    return (
-      <p
-        key={i}
-        className="mb-2 text-justify text-[10.5pt] leading-[1.55]"
-      >
-        {parts}
-      </p>
-    );
-  });
+function Letterhead() {
+  return (
+    <div className="pb-3">
+      <img
+        src={BRAND.headerImage}
+        alt="Borealis"
+        className="h-[60px] w-full object-contain object-left"
+      />
+    </div>
+  );
 }
 
-export const ContractPreview = forwardRef<HTMLDivElement, Props>(
-  ({ number, templateTitle, templateBody, vars }, ref) => {
-    const filled = fillTemplate(templateBody, vars);
-    return (
-      <div
-        ref={ref}
-        className="contract-paper mx-auto w-full max-w-[210mm] bg-white px-[22mm] py-[20mm] shadow-sm ring-1 ring-border"
-      >
-        <Letterhead />
+function Footer({ number }: { number: string }) {
+  return (
+    <div className="mt-auto flex items-center justify-between border-t border-neutral-300 pt-1 text-[8.5pt] text-neutral-500">
+      <span>{BRAND.footerLine}</span>
+      <span>
+        Broj:{" "}
+        <span className="font-mono text-[color:var(--primary)]">{number}</span>
+      </span>
+    </div>
+  );
+}
 
-        <div className="mb-4 flex items-center justify-between text-[9pt] text-neutral-600">
-          <span>Broj ugovora:</span>
-          <span className="font-mono font-semibold text-[color:var(--primary)]">
-            {number}
+/** One A4 page. */
+function A4Page({
+  children,
+  number,
+  style,
+}: {
+  children: ReactNode;
+  number: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      className="contract-paper mx-auto flex flex-col bg-white shadow-sm ring-1 ring-border"
+      style={{
+        width: "210mm",
+        height: `${PAGE_HEIGHT_MM}mm`,
+        padding: `${PAGE_MARGIN_MM}mm`,
+        ...style,
+      }}
+    >
+      <Letterhead />
+      <div className="flex-1 overflow-hidden">{children}</div>
+      <Footer number={number} />
+    </div>
+  );
+}
+
+export const ContractPreview = forwardRef<ContractPreviewHandle, Props>(
+  ({ number, templateTitle, templateBody, vars }, ref) => {
+    const filled = useMemo(
+      () => fillTemplate(templateBody, vars),
+      [templateBody, vars],
+    );
+    const blocks = useMemo(() => parseBlocks(filled), [filled]);
+
+    const measureRef = useRef<HTMLDivElement>(null);
+    const printRef = useRef<HTMLDivElement>(null);
+    const [pages, setPages] = useState<Block[][]>([blocks]);
+    const [currentPage, setCurrentPage] = useState(0);
+
+    useImperativeHandle(ref, () => ({
+      getPrintElement: () => printRef.current,
+    }));
+
+    // Measure each block's rendered height, then pack into pages.
+    useLayoutEffect(() => {
+      const el = measureRef.current;
+      if (!el) return;
+      const children = Array.from(el.children) as HTMLElement[];
+      const heightsPx = children.map((c) => c.getBoundingClientRect().height);
+      const heightsMm = heightsPx.map((h) => h * MM_PER_PX);
+
+      const maxMm = CONTENT_HEIGHT_MM
+        - 10; /* space for centered title on first page */
+      const result: Block[][] = [];
+      let current: Block[] = [];
+      let used = 10; // reserve for title on page 1
+      for (let i = 0; i < blocks.length; i++) {
+        const b = blocks[i];
+        const h = heightsMm[i] ?? 5;
+        // Signature block shouldn't be split; if it doesn't fit, new page.
+        if (used + h > maxMm && current.length > 0) {
+          result.push(current);
+          current = [];
+          used = 0;
+        }
+        current.push(b);
+        used += h;
+      }
+      if (current.length) result.push(current);
+      setPages(result.length ? result : [blocks]);
+      setCurrentPage((p) => Math.min(p, Math.max(0, result.length - 1)));
+    }, [blocks]);
+
+    const totalPages = pages.length;
+    const goPrev = () => setCurrentPage((p) => Math.max(0, p - 1));
+    const goNext = () =>
+      setCurrentPage((p) => Math.min(totalPages - 1, p + 1));
+
+    useEffect(() => {
+      if (currentPage >= totalPages) setCurrentPage(totalPages - 1);
+    }, [totalPages, currentPage]);
+
+    const renderPage = (pageBlocks: Block[], pageIdx: number) => (
+      <A4Page number={number} key={pageIdx}>
+        {pageIdx === 0 && (
+          <h1 className="mb-4 text-center text-[13pt] font-bold uppercase tracking-wide">
+            {templateTitle}
+          </h1>
+        )}
+        {pageBlocks.map((b, i) => (
+          <BlockView key={i} block={b} vars={vars} />
+        ))}
+      </A4Page>
+    );
+
+    return (
+      <div>
+        {/* Pagination controls */}
+        <div className="mb-3 flex items-center justify-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goPrev}
+            disabled={currentPage === 0}
+            aria-label="Prethodna stranica"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium tabular-nums">
+            {currentPage + 1} / {totalPages}
           </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goNext}
+            disabled={currentPage >= totalPages - 1}
+            aria-label="Sljedeća stranica"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
 
-        <h1 className="mb-6 mt-2 text-center text-[12pt] font-bold uppercase tracking-wide">
-          {templateTitle}
-        </h1>
+        {/* Visible page */}
+        <div className="flex justify-center">
+          {pages[currentPage] && renderPage(pages[currentPage], currentPage)}
+        </div>
 
-        <div className="contract-body">{renderBody(filled)}</div>
+        {/* Hidden measurer — identical styling, width-matched, off-screen */}
+        <div
+          aria-hidden
+          ref={measureRef}
+          className="contract-paper"
+          style={{
+            position: "absolute",
+            left: -99999,
+            top: 0,
+            width: `${210 - 2 * PAGE_MARGIN_MM}mm`,
+            visibility: "hidden",
+            pointerEvents: "none",
+          }}
+        >
+          {blocks.map((b, i) => (
+            <BlockView key={i} block={b} vars={vars} />
+          ))}
+        </div>
 
-        <div className="mt-8 border-t border-neutral-300 pt-2 text-right text-[9pt] text-neutral-500">
-          Borealis d.o.o. · OIB: 69433981874 · IBAN: HR8723400091110560684
+        {/* Hidden print container — all pages stacked, used by PDF export */}
+        <div
+          aria-hidden
+          ref={printRef}
+          style={{
+            position: "absolute",
+            left: -99999,
+            top: 0,
+            pointerEvents: "none",
+          }}
+        >
+          {pages.map((p, i) => renderPage(p, i))}
         </div>
       </div>
     );

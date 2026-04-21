@@ -117,12 +117,7 @@ ${servicesArticle}
 
 U Zagrebu, dana {{SIGN_DATE}}. godine.
 
-
-NARUČITELJ:                                                  IZVOĐAČ:
-
-
-___________________________                                  ___________________________
-{{PARTNER_REP}}, {{PARTNER_REP_TITLE}}                       {{BOREALIS_REP}}, Direktor
+@@SIGNATURE@@
 `;
 
 // Per-template Article 1 (subject) and Article 2.3 (services) — everything else is shared.

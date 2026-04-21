@@ -8,56 +8,223 @@ import {
   Header,
   Footer,
   PageNumber,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
 } from "docx";
 import fileSaver from "file-saver";
 const { saveAs } = fileSaver;
-import logoUrl from "@/assets/borealis-logo.jpg";
+import { BRAND } from "@/lib/branding";
+import type { ContractVars } from "./contract";
+import { fillTemplate } from "./contract";
 
 export interface ExportPayload {
   number: string;
   templateTitle: string;
-  body: string; // filled-in contract body (with ## / ### / **bold** markup)
+  body: string; // raw template body (still contains {{VARS}} — we fill here)
+  vars: ContractVars;
 }
 
-export async function exportPdf(el: HTMLElement, filename: string) {
-  const html2pdf = (await import("html2pdf.js")).default;
-  await html2pdf()
-    .set({
-      margin: [15, 15, 15, 15],
-      filename,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    } as never)
-    .from(el)
-    .save();
-}
+const FONT = BRAND.docxFont; // "Calibri"
+const BODY_SIZE = 22; // half-points -> 11pt
 
-/** Parse a single line into TextRuns, handling **bold** inline. */
-function runsFromLine(
+// ---------- Inline text runs ----------
+
+/** Build TextRuns from a plain-text line with **bold** markup. */
+function runsFromPlain(
   line: string,
   opts: { bold?: boolean; size?: number } = {},
 ): TextRun[] {
-  const size = opts.size ?? 21; // half-points => 10.5pt
+  const size = opts.size ?? BODY_SIZE;
   const parts = line.split(/(\*\*[^*]+\*\*)/g).filter((p) => p !== "");
-  if (parts.length === 0) return [new TextRun({ text: "", size, font: "Inter" })];
+  if (parts.length === 0)
+    return [new TextRun({ text: "", size, font: FONT })];
   return parts.map((p) => {
     const isBold = p.startsWith("**") && p.endsWith("**");
     return new TextRun({
       text: isBold ? p.slice(2, -2) : p,
       bold: opts.bold || isBold,
       size,
-      font: "Inter",
+      font: FONT,
     });
   });
 }
 
-function paragraphsFromBody(body: string): Paragraph[] {
-  const out: Paragraph[] = [];
+// ---------- HTML parsing (rich-text fields) ----------
+
+type InlineStyle = { bold?: boolean; italic?: boolean };
+
+interface HtmlBlock {
+  kind: "p" | "li-bullet" | "li-number";
+  runs: TextRun[];
+}
+
+function textRunsFromHtmlNode(
+  node: Node,
+  style: InlineStyle,
+): TextRun[] {
+  if (node.nodeType === 3 /* text */) {
+    const text = (node.textContent ?? "").replace(/\s+/g, " ");
+    if (!text) return [];
+    return [
+      new TextRun({
+        text,
+        bold: style.bold,
+        italics: style.italic,
+        size: BODY_SIZE,
+        font: FONT,
+      }),
+    ];
+  }
+  if (node.nodeType !== 1) return [];
+  const el = node as HTMLElement;
+  const tag = el.tagName.toLowerCase();
+  const next: InlineStyle = {
+    ...style,
+    bold: style.bold || tag === "strong" || tag === "b",
+    italic: style.italic || tag === "em" || tag === "i",
+  };
+  const out: TextRun[] = [];
+  el.childNodes.forEach((c) => out.push(...textRunsFromHtmlNode(c, next)));
+  return out;
+}
+
+/** Parse an HTML fragment into block-level pieces we can emit as docx paragraphs. */
+function parseHtmlFragment(html: string): HtmlBlock[] {
+  if (typeof window === "undefined") {
+    // SSR fallback: strip tags.
+    const stripped = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    return stripped ? [{ kind: "p", runs: runsFromPlain(stripped) }] : [];
+  }
+  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
+  const root = doc.body.firstElementChild;
+  if (!root) return [];
+  const blocks: HtmlBlock[] = [];
+  const walk = (el: Element) => {
+    Array.from(el.children).forEach((child) => {
+      const tag = child.tagName.toLowerCase();
+      if (tag === "ul") {
+        Array.from(child.children).forEach((li) => {
+          const runs: TextRun[] = [];
+          li.childNodes.forEach((n) =>
+            runs.push(...textRunsFromHtmlNode(n, {})),
+          );
+          if (runs.length) blocks.push({ kind: "li-bullet", runs });
+        });
+      } else if (tag === "ol") {
+        Array.from(child.children).forEach((li) => {
+          const runs: TextRun[] = [];
+          li.childNodes.forEach((n) =>
+            runs.push(...textRunsFromHtmlNode(n, {})),
+          );
+          if (runs.length) blocks.push({ kind: "li-number", runs });
+        });
+      } else {
+        // p, div, or anything else: treat as paragraph
+        const runs: TextRun[] = [];
+        child.childNodes.forEach((n) =>
+          runs.push(...textRunsFromHtmlNode(n, {})),
+        );
+        if (runs.length) blocks.push({ kind: "p", runs });
+      }
+    });
+  };
+  walk(root);
+  return blocks;
+}
+
+// ---------- Body -> Paragraphs ----------
+
+function signatureTable(vars: ContractVars): Table {
+  const noBorder = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+  const borders = {
+    top: noBorder,
+    bottom: noBorder,
+    left: noBorder,
+    right: noBorder,
+  };
+  const cellParas = (lines: { text: string; bold?: boolean; top?: number }[]) =>
+    lines.map(
+      (l) =>
+        new Paragraph({
+          spacing: { before: l.top ?? 0, after: 40 },
+          children: [
+            new TextRun({
+              text: l.text,
+              bold: l.bold,
+              size: BODY_SIZE,
+              font: FONT,
+            }),
+          ],
+        }),
+    );
+
+  return new Table({
+    width: { size: 9360, type: WidthType.DXA },
+    columnWidths: [4680, 4680],
+    borders: {
+      top: noBorder,
+      bottom: noBorder,
+      left: noBorder,
+      right: noBorder,
+      insideHorizontal: noBorder,
+      insideVertical: noBorder,
+    },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            borders,
+            width: { size: 4680, type: WidthType.DXA },
+            children: cellParas([
+              { text: "NARUČITELJ:", bold: true },
+              { text: "___________________________", top: 400 },
+              {
+                text:
+                  (vars.PARTNER_REP || "") +
+                  (vars.PARTNER_REP_TITLE
+                    ? `, ${vars.PARTNER_REP_TITLE}`
+                    : ""),
+              },
+              { text: vars.PARTNER_NAME || "" },
+            ]),
+          }),
+          new TableCell({
+            borders,
+            width: { size: 4680, type: WidthType.DXA },
+            children: cellParas([
+              { text: "IZVOĐAČ:", bold: true },
+              { text: "___________________________", top: 400 },
+              {
+                text: `${vars.BOREALIS_REP || "Dennis Puzak"}, Direktor`,
+              },
+              { text: "Borealis d.o.o." },
+            ]),
+          }),
+        ],
+      }),
+    ],
+  });
+}
+
+function bodyToChildren(
+  body: string,
+  vars: ContractVars,
+): (Paragraph | Table)[] {
+  const out: (Paragraph | Table)[] = [];
   for (const raw of body.split("\n")) {
     const line = raw.trimEnd();
     if (line === "") {
       out.push(new Paragraph({ children: [new TextRun("")] }));
+      continue;
+    }
+    if (line === "@@SIGNATURE@@") {
+      out.push(
+        new Paragraph({ spacing: { before: 400 }, children: [new TextRun("")] }),
+      );
+      out.push(signatureTable(vars));
       continue;
     }
     if (line.startsWith("## ")) {
@@ -65,7 +232,7 @@ function paragraphsFromBody(body: string): Paragraph[] {
         new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 240, after: 180 },
-          children: runsFromLine(line.slice(3), { bold: true, size: 22 }),
+          children: runsFromPlain(line.slice(3), { bold: true, size: 24 }),
         }),
       );
       continue;
@@ -75,51 +242,89 @@ function paragraphsFromBody(body: string): Paragraph[] {
         new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 160, after: 120 },
-          children: runsFromLine(line.slice(4), { bold: true, size: 22 }),
+          children: runsFromPlain(line.slice(4), { bold: true, size: 22 }),
         }),
       );
+      continue;
+    }
+    // HTML line from rich-text field?
+    if (/<(p|ul|ol|h[1-6]|li|div|br)\b/i.test(line) || /^<\w+/.test(line)) {
+      const blocks = parseHtmlFragment(line);
+      for (const b of blocks) {
+        if (b.kind === "li-bullet") {
+          out.push(
+            new Paragraph({
+              bullet: { level: 0 },
+              spacing: { after: 80 },
+              children: b.runs,
+            }),
+          );
+        } else if (b.kind === "li-number") {
+          out.push(
+            new Paragraph({
+              numbering: { reference: "rt-numbers", level: 0 },
+              spacing: { after: 80 },
+              children: b.runs,
+            }),
+          );
+        } else {
+          out.push(
+            new Paragraph({
+              alignment: AlignmentType.JUSTIFIED,
+              spacing: { after: 120, line: 300 },
+              children: b.runs,
+            }),
+          );
+        }
+      }
       continue;
     }
     out.push(
       new Paragraph({
         alignment: AlignmentType.JUSTIFIED,
-        spacing: { after: 120, line: 310 },
-        children: runsFromLine(line),
+        spacing: { after: 120, line: 300 },
+        children: runsFromPlain(line),
       }),
     );
   }
   return out;
 }
 
+// ---------- Exports ----------
+
+export async function exportPdf(el: HTMLElement, filename: string) {
+  const html2pdf = (await import("html2pdf.js")).default;
+  await html2pdf()
+    .set({
+      margin: 0,
+      filename,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      pagebreak: { mode: ["css", "legacy"] },
+    } as never)
+    .from(el)
+    .save();
+}
+
 async function loadLogoBytes(): Promise<ArrayBuffer> {
-  const res = await fetch(logoUrl);
+  const res = await fetch(BRAND.headerImage);
   return await res.arrayBuffer();
 }
 
 export async function exportDocx(payload: ExportPayload, filename: string) {
-  const { number, templateTitle, body } = payload;
+  const { number, templateTitle, body, vars } = payload;
+  const filled = fillTemplate(body, vars);
   const logoData = await loadLogoBytes();
 
   const headerLogo = new Paragraph({
     alignment: AlignmentType.LEFT,
     children: [
       new ImageRun({
-        type: "jpg",
+        type: "png",
         data: logoData,
-        transformation: { width: 120, height: 32 },
+        transformation: { width: 480, height: 68 },
       } as never),
-    ],
-  });
-
-  const headerInfo = new Paragraph({
-    alignment: AlignmentType.RIGHT,
-    children: [
-      new TextRun({
-        text: "Borealis d.o.o. · Ljutomerska 7, 10000 Zagreb · borealis.agency · info@borealis.biz",
-        size: 16,
-        font: "Inter",
-        color: "555555",
-      }),
     ],
   });
 
@@ -130,8 +335,8 @@ export async function exportDocx(payload: ExportPayload, filename: string) {
       new TextRun({
         text: templateTitle.toUpperCase(),
         bold: true,
-        size: 24,
-        font: "Inter",
+        size: 26,
+        font: FONT,
       }),
     ],
   });
@@ -143,20 +348,35 @@ export async function exportDocx(payload: ExportPayload, filename: string) {
       new TextRun({
         text: `Broj ugovora: ${number}`,
         bold: true,
-        size: 18,
-        font: "Inter",
+        size: 20,
+        font: FONT,
         color: "E63329",
       }),
     ],
   });
 
   const footerPara = new Paragraph({
-    alignment: AlignmentType.RIGHT,
+    alignment: AlignmentType.LEFT,
     children: [
-      new TextRun({ text: "Stranica ", size: 16, font: "Inter", color: "888888" }),
-      new TextRun({ children: [PageNumber.CURRENT], size: 16, font: "Inter", color: "888888" }),
-      new TextRun({ text: " / ", size: 16, font: "Inter", color: "888888" }),
-      new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, font: "Inter", color: "888888" }),
+      new TextRun({
+        text: `${BRAND.footerLine}   ·   Stranica `,
+        size: 16,
+        font: FONT,
+        color: "888888",
+      }),
+      new TextRun({
+        children: [PageNumber.CURRENT],
+        size: 16,
+        font: FONT,
+        color: "888888",
+      }),
+      new TextRun({ text: " / ", size: 16, font: FONT, color: "888888" }),
+      new TextRun({
+        children: [PageNumber.TOTAL_PAGES],
+        size: 16,
+        font: FONT,
+        color: "888888",
+      }),
     ],
   });
 
@@ -164,7 +384,23 @@ export async function exportDocx(payload: ExportPayload, filename: string) {
     creator: "Borealis",
     title: templateTitle,
     styles: {
-      default: { document: { run: { font: "Inter", size: 21 } } },
+      default: { document: { run: { font: FONT, size: BODY_SIZE } } },
+    },
+    numbering: {
+      config: [
+        {
+          reference: "rt-numbers",
+          levels: [
+            {
+              level: 0,
+              format: "decimal",
+              text: "%1.",
+              alignment: AlignmentType.LEFT,
+              style: { paragraph: { indent: { left: 720, hanging: 360 } } },
+            },
+          ],
+        },
+      ],
     },
     sections: [
       {
@@ -174,12 +410,12 @@ export async function exportDocx(payload: ExportPayload, filename: string) {
           },
         },
         headers: {
-          default: new Header({ children: [headerLogo, headerInfo] }),
+          default: new Header({ children: [headerLogo] }),
         },
         footers: {
           default: new Footer({ children: [footerPara] }),
         },
-        children: [numberLine, title, ...paragraphsFromBody(body)],
+        children: [numberLine, title, ...bodyToChildren(filled, vars)],
       },
     ],
   });

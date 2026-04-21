@@ -56,16 +56,20 @@ export function fillTemplate(body: string, vars: ContractVars): string {
 // ===== Contract numbering =====
 const COUNTER_KEY = "borealis_contract_counter";
 
+const hasLS = () => typeof window !== "undefined" && !!window.localStorage;
+
 export function peekNextNumber(): string {
   const year = new Date().getFullYear();
-  const raw = localStorage.getItem(COUNTER_KEY);
   let next = 1;
-  if (raw) {
-    try {
-      const { year: y, n } = JSON.parse(raw);
-      next = y === year ? n + 1 : 1;
-    } catch {
-      /* ignore */
+  if (hasLS()) {
+    const raw = localStorage.getItem(COUNTER_KEY);
+    if (raw) {
+      try {
+        const { year: y, n } = JSON.parse(raw);
+        next = y === year ? n + 1 : 1;
+      } catch {
+        /* ignore */
+      }
     }
   }
   return `BOR-${year}-${String(next).padStart(4, "0")}`;
@@ -73,6 +77,7 @@ export function peekNextNumber(): string {
 
 export function consumeNextNumber(): string {
   const num = peekNextNumber();
+  if (!hasLS()) return num;
   const year = new Date().getFullYear();
   const n = parseInt(num.split("-")[2], 10);
   localStorage.setItem(COUNTER_KEY, JSON.stringify({ year, n }));
@@ -93,6 +98,7 @@ export interface HistoryEntry {
 const HISTORY_KEY = "borealis_contract_history";
 
 export function loadHistory(): HistoryEntry[] {
+  if (!hasLS()) return [];
   try {
     return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
   } catch {
@@ -101,6 +107,7 @@ export function loadHistory(): HistoryEntry[] {
 }
 
 export function saveHistory(entries: HistoryEntry[]) {
+  if (!hasLS()) return;
   localStorage.setItem(HISTORY_KEY, JSON.stringify(entries));
 }
 

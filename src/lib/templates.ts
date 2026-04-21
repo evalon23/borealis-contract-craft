@@ -12,57 +12,64 @@ export interface ContractTemplate {
  * Template bodies use {{VARIABLE}} placeholders.
  * Replace the PLACEHOLDER_BODY strings below with the real Croatian contract texts.
  */
-const PLACEHOLDER_BODY = (title: string) => `PREDMET UGOVORA
-Ovaj ugovor sklapa se između:
-
-IZVRŠITELJA:
-Borealis d.o.o., Ljutomerska ulica 7, 10 000 Zagreb
-OIB: 69433981874
-zastupan po: {{BOREALIS_REP}}
+const PLACEHOLDER_BODY = (title: string) => `**{{PARTNER_NAME}}** iz {{PARTNER_CITY}}, {{PARTNER_ADDRESS}}, OIB: {{PARTNER_OIB}}, kojeg zastupa {{PARTNER_REP_TITLE}} {{PARTNER_REP}} (u daljnjem tekstu: „Naručitelj")
 
 i
 
-NARUČITELJA:
-{{PARTNER_NAME}}, {{PARTNER_ADDRESS}}, {{PARTNER_CITY}}
-OIB: {{PARTNER_OIB}}
-zastupan po: {{PARTNER_REP}}, {{PARTNER_REP_TITLE}}
+**Borealis d.o.o.** iz Zagreba, Ljutomerska 7, OIB: 69433981874, kojeg zastupa direktor {{BOREALIS_REP}} (u daljnjem tekstu: „Izvođač"),
 
-Članak 1. – Predmet ugovora
-Predmet ovog ugovora je ${title.toLowerCase()} pod nazivom "{{PROJECT_NAME}}".
+sklopili su u Zagrebu, dana {{SIGN_DATE}}. godine sljedeći
 
-Opis predmeta ugovora:
+## ${title.toUpperCase()}
+
+## PREDMET UGOVORA
+
+### Članak 1.
+
+1.1. Predmet ovog ugovora je projekt pod nazivom "{{PROJECT_NAME}}".
+
 {{PROJECT_SCOPE}}
 
-Članak 2. – Usluge
-Izvršitelj se obvezuje pružiti sljedeće usluge:
+### Članak 2.
+
+2.1. Izvođač se obvezuje pružiti sljedeće usluge:
+
 {{SERVICE_LIST}}
 
-Članak 3. – Financijski uvjeti
-Ukupna vrijednost ugovora iznosi {{CONTRACT_VALUE}} EUR.
-Godišnji budžet: {{BUDGET_EUR}} EUR.
-Godišnji broj sati: {{BUDGET_HOURS}} sati.
-Satnica u redovnom radnom vremenu: {{HOURLY_RATE_REGULAR}} EUR/h.
-Satnica izvan radnog vremena: {{HOURLY_RATE_OVERTIME}} EUR/h.
+2.2. Ukupna vrijednost ugovora iznosi **{{CONTRACT_VALUE}} EUR** bez PDV-a. Godišnji budžet iznosi {{BUDGET_EUR}} EUR, što odgovara fondu od {{BUDGET_HOURS}} radnih sati godišnje.
 
-Uvjeti plaćanja:
-{{PAYMENT_TERMS}}
+2.3. Budžet se troši prema obračunu napravljenih radnih sati na temelju sljedećih cijena:
+- {{HOURLY_RATE_REGULAR}} EUR po satu za rad u redovnom radnom vremenu (pon-pet od 08:00 do 17:00, osim blagdana i praznika),
+- {{HOURLY_RATE_OVERTIME}} EUR po satu za rad izvan redovnog radnog vremena.
 
-Članak 4. – Rokovi
-Datum početka: {{START_DATE}}
-Rok isporuke: {{DEADLINE}}
+2.4. Uvjeti plaćanja: {{PAYMENT_TERMS}}
 
-Članak 5. – Posebni uvjeti
-{{SPECIAL_CONDITIONS}}
+### Članak 3.
 
-Članak 6. – Završne odredbe
-Ugovor je sastavljen u dva (2) istovjetna primjerka, po jedan za svaku ugovornu stranu.
+3.1. Datum početka izvršavanja obveza: {{START_DATE}}. Rok isporuke: {{DEADLINE}}.
 
-U Zagrebu, {{SIGN_DATE}}
+## POSEBNI UVJETI
 
-Za Izvršitelja:                                Za Naručitelja:
-_______________________                        _______________________
-{{BOREALIS_REP}}                               {{PARTNER_REP}}
-Borealis d.o.o.                                {{PARTNER_NAME}}
+### Članak 4.
+
+4.1. {{SPECIAL_CONDITIONS}}
+
+## ZAVRŠNE ODREDBE
+
+### Članak 5.
+
+5.1. Ovaj ugovor napravljen je u 4 (četiri) istovjetna primjerka, po 2 (dva) za svaku od ugovornih strana.
+
+5.2. Ugovornim stranama je ovaj ugovor pročitan, protumačen, te ga one u znak prihvaćanja svih prava i obveza njime stipuliranih vlastoručno potpisuju.
+
+U Zagrebu, dana {{SIGN_DATE}}. godine.
+
+
+NARUČITELJ:                                                  IZVOĐAČ:
+
+
+___________________________                                  ___________________________
+{{PARTNER_REP}}, {{PARTNER_REP_TITLE}}                       {{BOREALIS_REP}}, Direktor
 `;
 
 export const TEMPLATES: ContractTemplate[] = [

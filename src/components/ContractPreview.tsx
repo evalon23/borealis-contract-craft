@@ -281,11 +281,6 @@ export const ContractPreview = forwardRef<ContractPreviewHandle, Props>(
 
     const renderPage = (pageBlocks: Block[], pageIdx: number) => (
       <A4Page number={number} key={pageIdx}>
-        {pageIdx === 0 && (
-          <h1 className="mb-4 text-center text-[13pt] font-bold uppercase tracking-wide">
-            {templateTitle}
-          </h1>
-        )}
         {pageBlocks.map((b, i) => (
           <BlockView key={i} block={b} vars={vars} />
         ))}

@@ -13,6 +13,7 @@ import {
   TableCell,
   WidthType,
   BorderStyle,
+  TabStopType,
 } from "docx";
 import fileSaver from "file-saver";
 const { saveAs } = fileSaver;
@@ -293,7 +294,8 @@ function bodyToChildren(
 // ---------- Exports ----------
 
 export async function exportPdf(el: HTMLElement, filename: string) {
-  const html2pdf = (await import("html2pdf.js")).default;
+  const html2pdfModule = await import("html2pdf.js");
+  const html2pdf = html2pdfModule.default ?? html2pdfModule;
 
   // Render the print element into a visible sandbox positioned far off-screen
   // (negative left, but NOT zero opacity). html2canvas needs the element to be
@@ -330,7 +332,7 @@ export async function exportPdf(el: HTMLElement, filename: string) {
   document.body.appendChild(sandbox);
 
   try {
-    await html2pdf()
+    const worker = html2pdf()
       .set({
         margin: 0,
         filename,
@@ -344,8 +346,10 @@ export async function exportPdf(el: HTMLElement, filename: string) {
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         pagebreak: { mode: ["css", "legacy"] },
       } as never)
-      .from(clone)
-      .save();
+      .from(clone);
+
+    const pdfBlob = await worker.outputPdf("blob");
+    saveAs(pdfBlob, filename);
   } finally {
     document.body.removeChild(sandbox);
   }
@@ -363,12 +367,32 @@ export async function exportDocx(payload: ExportPayload, filename: string) {
 
   const headerLogo = new Paragraph({
     alignment: AlignmentType.LEFT,
+    spacing: { after: 40 },
+    tabStops: [{ type: TabStopType.RIGHT, position: 9360 }],
     children: [
       new ImageRun({
         type: "png",
         data: logoData,
         transformation: { width: 180, height: 36 },
       } as never),
+      new TextRun("\t"),
+      new TextRun({
+        text: `${BRAND.headerDetails[0]?.title ?? ""} · ${BRAND.headerDetails[0]?.lines.join(" ") ?? ""}`,
+        size: 16,
+        font: FONT,
+      }),
+    ],
+  });
+
+  const headerDetails = new Paragraph({
+    alignment: AlignmentType.RIGHT,
+    spacing: { after: 120 },
+    children: [
+      new TextRun({
+        text: `${BRAND.headerDetails[1]?.title ?? ""}, ${BRAND.headerDetails[1]?.lines.join(" ") ?? ""}   ·   ${BRAND.headerDetails[2]?.title ?? ""}   ·   ${BRAND.headerDetails[2]?.lines.join(" ") ?? ""}`,
+        size: 16,
+        font: FONT,
+      }),
     ],
   });
 
@@ -441,7 +465,7 @@ export async function exportDocx(payload: ExportPayload, filename: string) {
           },
         },
         headers: {
-          default: new Header({ children: [headerLogo] }),
+          default: new Header({ children: [headerLogo, headerDetails] }),
         },
         footers: {
           default: new Footer({ children: [footerPara] }),

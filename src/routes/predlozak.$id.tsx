@@ -41,15 +41,17 @@ function TemplatePage() {
   const [vars, setVars] = useState<ContractVars>(
     existing?.vars ?? EMPTY_VARS,
   );
-  const [number, setNumber] = useState<string>(
-    existing?.number ?? peekNextNumber(),
-  );
+  const [number, setNumber] = useState<string>(existing?.number ?? "");
   const [saved, setSaved] = useState<boolean>(!!existing);
   const [savedId, setSavedId] = useState<string | undefined>(existing?.id);
   const previewRef = useRef<ContractPreviewHandle>(null);
 
   useEffect(() => {
-    if (!existing) setNumber(peekNextNumber());
+    if (existing) {
+      setNumber(existing.number);
+      return;
+    }
+    setNumber(peekNextNumber());
   }, [existing]);
 
   const ensureSaved = (): HistoryEntry => {
@@ -87,11 +89,11 @@ function TemplatePage() {
     `${number}_${(vars.PARTNER_NAME || "ugovor").replace(/[^\w\-]+/g, "_")}`;
 
   const handlePdf = async () => {
-    ensureSaved();
+    const entry = ensureSaved();
     const el = previewRef.current?.getPrintElement();
     if (!el) return;
     try {
-      await exportPdf(el, `${number}.pdf`);
+      await exportPdf(el, `${entry.number}.pdf`);
       toast.success("PDF preuzet");
     } catch {
       toast.error("Greška pri izradi PDF-a");

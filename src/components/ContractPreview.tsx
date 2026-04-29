@@ -150,18 +150,31 @@ function SignatureBlock({ vars }: { vars: ContractVars }) {
 
 function Letterhead() {
   return (
-    <div className="pb-3">
-      <img
-        src={BRAND.headerImage}
-        alt="Borealis"
-        style={{
-          height: "60px",
-          width: "auto",
-          maxWidth: "100%",
-          objectFit: "contain",
-          display: "block",
-        }}
-      />
+    <div className="border-b border-neutral-300 pb-3">
+      <div className="flex items-start justify-between gap-6">
+        <img
+          src={BRAND.headerImage}
+          alt="Borealis"
+          style={{
+            height: "36px",
+            width: "auto",
+            maxWidth: "46%",
+            objectFit: "contain",
+            display: "block",
+            flexShrink: 0,
+          }}
+        />
+        <div className="grid flex-1 grid-cols-3 gap-4 text-right text-[8.5pt] leading-[1.15] text-neutral-700">
+          {BRAND.headerDetails.map((item) => (
+            <div key={item.title}>
+              <div className="font-semibold text-neutral-900">{item.title}</div>
+              {item.lines.map((line) => (
+                <div key={line}>{line}</div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

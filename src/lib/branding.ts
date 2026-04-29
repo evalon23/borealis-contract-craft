@@ -5,6 +5,20 @@ import headerLogo from "@/assets/borealis-logo-horizontal.png";
 export const BRAND = {
   /** Full header lockup (logo + contact info strip). Used in preview + docx header. */
   headerImage: headerLogo,
+  headerDetails: [
+    {
+      title: "Borealis d.o.o.",
+      lines: ["development & design"],
+    },
+    {
+      title: "Ljutomerska 7",
+      lines: ["10000 Zagreb"],
+    },
+    {
+      title: "borealis.agency",
+      lines: ["info@borealis.biz"],
+    },
+  ],
   /** Proportions of the header image (for aspect-ratio on preview). */
   headerAspect: 1560 / 220, // width / height (approx. for the uploaded strip)
   /** Font stack used in the contract preview and exports. */

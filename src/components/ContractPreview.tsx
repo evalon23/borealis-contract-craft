@@ -154,7 +154,13 @@ function Letterhead() {
       <img
         src={BRAND.headerImage}
         alt="Borealis"
-        className="h-[60px] w-full object-contain object-left"
+        style={{
+          height: "60px",
+          width: "auto",
+          maxWidth: "100%",
+          objectFit: "contain",
+          display: "block",
+        }}
       />
     </div>
   );

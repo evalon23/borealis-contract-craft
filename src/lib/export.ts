@@ -355,21 +355,8 @@ export async function exportDocx(payload: ExportPayload, filename: string) {
       new ImageRun({
         type: "png",
         data: logoData,
-        transformation: { width: 480, height: 68 },
+        transformation: { width: 180, height: 36 },
       } as never),
-    ],
-  });
-
-  const title = new Paragraph({
-    alignment: AlignmentType.CENTER,
-    spacing: { before: 200, after: 200 },
-    children: [
-      new TextRun({
-        text: templateTitle.toUpperCase(),
-        bold: true,
-        size: 26,
-        font: FONT,
-      }),
     ],
   });
 
@@ -447,7 +434,7 @@ export async function exportDocx(payload: ExportPayload, filename: string) {
         footers: {
           default: new Footer({ children: [footerPara] }),
         },
-        children: [numberLine, title, ...bodyToChildren(filled, vars)],
+        children: [numberLine, ...bodyToChildren(filled, vars)],
       },
     ],
   });

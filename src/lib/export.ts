@@ -294,23 +294,38 @@ function bodyToChildren(
 
 export async function exportPdf(el: HTMLElement, filename: string) {
   const html2pdf = (await import("html2pdf.js")).default;
-  // Move the print element into a visible-but-offscreen sandbox so
-  // html2canvas can correctly measure its layout. Some browsers report
-  // zero size for elements positioned at extreme negative offsets.
+
+  // Render the print element into a visible sandbox positioned far off-screen
+  // (negative left, but NOT zero opacity). html2canvas needs the element to be
+  // actually rendered with real dimensions to capture it.
   const sandbox = document.createElement("div");
   sandbox.style.position = "fixed";
   sandbox.style.top = "0";
-  sandbox.style.left = "0";
+  sandbox.style.left = "-10000px";
   sandbox.style.width = "210mm";
-  sandbox.style.zIndex = "-1";
-  sandbox.style.opacity = "0";
-  sandbox.style.pointerEvents = "none";
   sandbox.style.background = "#ffffff";
+  sandbox.style.zIndex = "0";
+
   const clone = el.cloneNode(true) as HTMLElement;
   clone.style.position = "static";
   clone.style.left = "auto";
   clone.style.top = "auto";
   clone.style.pointerEvents = "auto";
+
+  // Each .contract-paper child is exactly one A4 page. Add an explicit
+  // page-break-before to every page EXCEPT the first so html2pdf creates a
+  // new PDF page between them — without producing a blank leading page.
+  const pages = clone.querySelectorAll<HTMLElement>(".contract-paper");
+  pages.forEach((p, i) => {
+    if (i > 0) {
+      p.style.pageBreakBefore = "always";
+      p.style.breakBefore = "page";
+    }
+    // Avoid box-shadow/ring artifacts in PDF
+    p.style.boxShadow = "none";
+    p.style.outline = "none";
+  });
+
   sandbox.appendChild(clone);
   document.body.appendChild(sandbox);
 
@@ -327,10 +342,7 @@ export async function exportPdf(el: HTMLElement, filename: string) {
           windowWidth: 794,
         },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: {
-          mode: ["css", "legacy"],
-          before: ".contract-paper",
-        },
+        pagebreak: { mode: ["css", "legacy"] },
       } as never)
       .from(clone)
       .save();

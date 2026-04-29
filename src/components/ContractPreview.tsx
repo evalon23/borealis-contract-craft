@@ -215,12 +215,30 @@ export const ContractPreview = forwardRef<ContractPreviewHandle, Props>(
 
     const measureRef = useRef<HTMLDivElement>(null);
     const printRef = useRef<HTMLDivElement>(null);
+    const scaleWrapRef = useRef<HTMLDivElement>(null);
     const [pages, setPages] = useState<Block[][]>([blocks]);
     const [currentPage, setCurrentPage] = useState(0);
+    const [scale, setScale] = useState(1);
 
     useImperativeHandle(ref, () => ({
       getPrintElement: () => printRef.current,
     }));
+
+    // Track container width and scale the A4 page so it always fits.
+    useEffect(() => {
+      const el = scaleWrapRef.current;
+      if (!el) return;
+      const A4_PX = 210 / MM_PER_PX; // ~794
+      const update = () => {
+        const w = el.clientWidth;
+        const s = Math.min(1, w / A4_PX);
+        setScale(s);
+      };
+      update();
+      const ro = new ResizeObserver(update);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }, []);
 
     // Measure each block's rendered height, then pack into pages.
     useLayoutEffect(() => {

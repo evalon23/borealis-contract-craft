@@ -81,6 +81,19 @@
   font-family: "Calibri", "Carlito", sans-serif;
   font-size: 11pt;
   line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.contract-paper * {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+/* Scale the on-screen A4 preview down to fit narrower columns without altering layout */
+.contract-preview-scale {
+  transform: scale(var(--preview-scale, 1));
+  transform-origin: top center;
 }
 .contract-paper h1,
 .contract-paper h2,

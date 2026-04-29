@@ -91,7 +91,7 @@ function TemplatePage() {
     const el = previewRef.current?.getPrintElement();
     if (!el) return;
     try {
-      await exportPdf(el, `${baseFilename()}.pdf`);
+      await exportPdf(el, `${number}.pdf`);
       toast.success("PDF preuzet");
     } catch {
       toast.error("Greška pri izradi PDF-a");

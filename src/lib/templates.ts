@@ -24,6 +24,8 @@ i
 
 sklopili su u Zagrebu, dana {{SIGN_DATE}}. godine sljedeći
 
+## ${titleUpper}
+
 ## PREDMET UGOVORA
 
 ### Članak 1.

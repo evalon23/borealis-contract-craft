@@ -1,6 +1,6 @@
 // Single source of truth for brand assets used across preview + exports.
 // Swap the logo by replacing the file at src/assets/borealis-header.png.
-import headerLogo from "@/assets/borealis-header.png";
+import headerLogo from "@/assets/borealis-logo-horizontal.png";
 
 export const BRAND = {
   /** Full header lockup (logo + contact info strip). Used in preview + docx header. */

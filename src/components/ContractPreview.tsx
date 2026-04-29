@@ -319,9 +319,18 @@ export const ContractPreview = forwardRef<ContractPreviewHandle, Props>(
           </Button>
         </div>
 
-        {/* Visible page */}
-        <div className="flex justify-center">
-          {pages[currentPage] && renderPage(pages[currentPage], currentPage)}
+        {/* Visible page (scaled to fit container width) */}
+        <div ref={scaleWrapRef} className="w-full overflow-hidden">
+          <div
+            style={{
+              width: "210mm",
+              transform: `scale(${scale})`,
+              transformOrigin: "top left",
+              height: `${297 * scale}mm`,
+            }}
+          >
+            {pages[currentPage] && renderPage(pages[currentPage], currentPage)}
+          </div>
         </div>
 
         {/* Hidden measurer — identical styling, width-matched, off-screen */}

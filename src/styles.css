@@ -103,8 +103,18 @@
 }
 /* Rich text content inside contract body */
 .contract-paper .rt-content p { margin: 0 0 0.5rem 0; text-align: justify; }
-.contract-paper .rt-content ul { list-style: disc; padding-left: 1.25rem; margin: 0 0 0.5rem 0; }
-.contract-paper .rt-content ol { list-style: decimal; padding-left: 1.25rem; margin: 0 0 0.5rem 0; }
-.contract-paper .rt-content li { margin-bottom: 0.15rem; }
+.contract-paper .rt-content ul { list-style: disc outside; padding-left: 1.5rem; margin: 0 0 0.5rem 0; }
+.contract-paper .rt-content ol { list-style: decimal outside; padding-left: 1.5rem; margin: 0 0 0.5rem 0; }
+.contract-paper .rt-content li { margin-bottom: 0.15rem; display: list-item; }
 .contract-paper .rt-content strong { font-weight: 700; }
 .contract-paper .rt-content em { font-style: italic; }
+
+/* Rich text editor (TipTap) — ensure lists render with markers */
+.ProseMirror { outline: none; }
+.ProseMirror ul { list-style: disc outside; padding-left: 1.5rem; margin: 0.25rem 0; }
+.ProseMirror ol { list-style: decimal outside; padding-left: 1.5rem; margin: 0.25rem 0; }
+.ProseMirror li { margin-bottom: 0.15rem; display: list-item; }
+.ProseMirror li > p { margin: 0; }
+.ProseMirror p { margin: 0 0 0.4rem 0; }
+.ProseMirror strong { font-weight: 700; }
+.ProseMirror em { font-style: italic; }

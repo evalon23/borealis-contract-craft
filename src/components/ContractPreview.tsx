@@ -36,7 +36,7 @@ export interface ContractPreviewHandle {
 const PAGE_HEIGHT_MM = 297;
 const PAGE_MARGIN_MM = 20; // top/bottom
 const HEADER_RESERVE_MM = 22; // header strip + gap
-const FOOTER_RESERVE_MM = 16; // footer line + breathing room
+const FOOTER_RESERVE_MM = 26; // footer line + breathing room
 const CONTENT_HEIGHT_MM =
   PAGE_HEIGHT_MM - 2 * PAGE_MARGIN_MM - HEADER_RESERVE_MM - FOOTER_RESERVE_MM;
 
@@ -193,7 +193,7 @@ function Letterhead() {
 
 function Footer({ number }: { number: string }) {
   return (
-    <div className="mt-auto flex items-center justify-between border-t border-neutral-300 pt-2 mt-6 text-[8.5pt] text-neutral-500">
+    <div className="mt-auto flex items-center justify-between border-t border-neutral-300 pt-4 text-[8.5pt] text-neutral-500">
       <span>{BRAND.footerLine}</span>
       <span>
         Broj:{" "}
@@ -224,7 +224,7 @@ function A4Page({
       }}
     >
       <Letterhead />
-      <div className="flex-1 overflow-hidden">{children}</div>
+      <div className="flex-1 overflow-hidden pt-3">{children}</div>
       <Footer number={number} />
     </div>
   );
@@ -273,19 +273,22 @@ export const ContractPreview = forwardRef<ContractPreviewHandle, Props>(
       const heightsPx = children.map((c) => c.getBoundingClientRect().height);
       const heightsMm = heightsPx.map((h) => h * MM_PER_PX);
 
-      const maxMm = CONTENT_HEIGHT_MM
-        - 10; /* space for centered title on first page */
+      const firstPageReserveMm = 10;
+      const followingPageReserveMm = 0;
       const result: Block[][] = [];
       let current: Block[] = [];
-      let used = 10; // reserve for title on page 1
+      let used = firstPageReserveMm;
       for (let i = 0; i < blocks.length; i++) {
         const b = blocks[i];
         const h = heightsMm[i] ?? 5;
         // Signature block shouldn't be split; if it doesn't fit, new page.
-        if (used + h > maxMm && current.length > 0) {
+        const pageLimit = result.length === 0
+          ? CONTENT_HEIGHT_MM - firstPageReserveMm
+          : CONTENT_HEIGHT_MM - followingPageReserveMm;
+        if (used + h > pageLimit && current.length > 0) {
           result.push(current);
           current = [];
-          used = 0;
+          used = followingPageReserveMm;
         }
         current.push(b);
         used += h;

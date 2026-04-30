@@ -15,7 +15,9 @@ import {
   type ContractVars,
   type HistoryEntry,
 } from "@/lib/contract";
-import { exportDocx, exportPdf } from "@/lib/export";
+import { exportDocx, exportDocxBlob, exportPdf, exportPdfBlob } from "@/lib/export";
+import { uploadToDrive } from "@/server/drive.functions";
+import { BRAND } from "@/lib/branding";
 import { toast } from "sonner";
 
 type Search = { edit?: string };
@@ -88,32 +90,84 @@ function TemplatePage() {
   const baseFilename = () =>
     `${number}_${(vars.PARTNER_NAME || "ugovor").replace(/[^\w\-]+/g, "_")}`;
 
+  const blobToBase64 = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // strip "data:...;base64," prefix
+        resolve(result.split(",")[1] ?? "");
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+
+  const uploadFileToDrive = async (
+    blob: Blob,
+    filename: string,
+    mimeType: string,
+  ) => {
+    try {
+      const contentBase64 = await blobToBase64(blob);
+      await uploadToDrive({
+        data: {
+          filename,
+          mimeType,
+          contentBase64,
+          folderId: BRAND.driveFolderId,
+        },
+      });
+      toast.success(`${filename} spremljen na Google Drive`);
+    } catch (e) {
+      console.error("Drive upload failed", e);
+      toast.error("Drive upload nije uspio");
+    }
+  };
+
   const handlePdf = async () => {
     const entry = ensureSaved();
     const el = previewRef.current?.getPrintElement();
     if (!el) return;
+    const filename = `${entry.number}.pdf`;
     try {
-      await exportPdf(el, `${entry.number}.pdf`);
-      toast.success("PDF preuzet");
-    } catch {
-      toast.error("Greška pri izradi PDF-a");
+      // Open print dialog for user to save as PDF
+      await exportPdf(el, filename);
+      toast.success("Otvoren print dialog — odaberi 'Save as PDF'");
+      // In parallel, generate a real PDF blob and upload to Drive
+      try {
+        const blob = await exportPdfBlob(el);
+        await uploadFileToDrive(blob, filename, "application/pdf");
+      } catch (e) {
+        console.error("PDF blob generation failed", e);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Greška pri otvaranju print prozora");
     }
   };
 
   const handleDocx = async () => {
     ensureSaved();
+    const filename = `${baseFilename()}.docx`;
     try {
-      await exportDocx(
-        {
-          number,
-          templateTitle: template.title,
-          body: template.body,
-          vars,
-        },
-        `${baseFilename()}.docx`,
-      );
+      const payload = {
+        number,
+        templateTitle: template.title,
+        body: template.body,
+        vars,
+      };
+      const blob = await exportDocxBlob(payload);
+      // Trigger browser download
+      await exportDocx(payload, filename);
       toast.success("Word dokument preuzet");
-    } catch {
+      // Upload to Drive in background
+      await uploadFileToDrive(
+        blob,
+        filename,
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      );
+    } catch (e) {
+      console.error(e);
       toast.error("Greška pri izradi Word dokumenta");
     }
   };

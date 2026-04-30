@@ -12,7 +12,13 @@ import type { ContractVars } from "@/lib/contract";
 import { fillTemplate } from "@/lib/contract";
 import { BRAND } from "@/lib/branding";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Building2, MapPin, Globe } from "lucide-react";
+
+const ICONS = {
+  building: Building2,
+  "map-pin": MapPin,
+  globe: Globe,
+} as const;
 
 interface Props {
   number: string;
@@ -165,14 +171,20 @@ function Letterhead() {
           }}
         />
         <div className="grid flex-1 grid-cols-3 gap-4 text-right text-[8.5pt] leading-[1.15] text-neutral-700">
-          {BRAND.headerDetails.map((item) => (
-            <div key={item.title}>
-              <div className="font-semibold text-neutral-900">{item.title}</div>
-              {item.lines.map((line) => (
-                <div key={line}>{line}</div>
-              ))}
-            </div>
-          ))}
+          {BRAND.headerDetails.map((item) => {
+            const Icon = ICONS[item.icon];
+            return (
+              <div key={item.title} className="flex items-start justify-end gap-1.5">
+                <div>
+                  <div className="font-semibold text-neutral-900">{item.title}</div>
+                  {item.lines.map((line) => (
+                    <div key={line}>{line}</div>
+                  ))}
+                </div>
+                <Icon className="mt-0.5 h-3 w-3 shrink-0 text-[color:var(--primary)]" />
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

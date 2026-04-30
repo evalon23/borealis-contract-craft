@@ -353,7 +353,7 @@ async function loadLogoBytes(): Promise<ArrayBuffer> {
   return await res.arrayBuffer();
 }
 
-export async function exportDocx(payload: ExportPayload, filename: string) {
+async function buildDocxDocument(payload: ExportPayload): Promise<Document> {
   const { number, templateTitle, body, vars } = payload;
   const filled = fillTemplate(body, vars);
   const logoData = await loadLogoBytes();
@@ -428,7 +428,7 @@ export async function exportDocx(payload: ExportPayload, filename: string) {
     ],
   });
 
-  const doc = new Document({
+  return new Document({
     creator: "Borealis",
     title: templateTitle,
     styles: {
@@ -467,7 +467,71 @@ export async function exportDocx(payload: ExportPayload, filename: string) {
       },
     ],
   });
+}
 
-  const blob = await Packer.toBlob(doc);
+export async function exportDocxBlob(payload: ExportPayload): Promise<Blob> {
+  const doc = await buildDocxDocument(payload);
+  return Packer.toBlob(doc);
+}
+
+export async function exportDocx(payload: ExportPayload, filename: string) {
+  const blob = await exportDocxBlob(payload);
   saveAs(blob, filename);
 }
+
+/** Generate a real PDF Blob using html2pdf for Drive upload (separate from print). */
+export async function exportPdfBlob(el: HTMLElement): Promise<Blob> {
+  const html2pdfModule = await import("html2pdf.js");
+  const html2pdf = (html2pdfModule as { default?: unknown }).default ?? html2pdfModule;
+
+  const sandbox = document.createElement("div");
+  sandbox.style.position = "fixed";
+  sandbox.style.top = "0";
+  sandbox.style.left = "-10000px";
+  sandbox.style.width = "210mm";
+  sandbox.style.background = "#ffffff";
+  sandbox.style.zIndex = "0";
+
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone.style.position = "static";
+  clone.style.left = "auto";
+  clone.style.top = "auto";
+  clone.style.pointerEvents = "auto";
+
+  const pages = clone.querySelectorAll<HTMLElement>(".contract-paper");
+  pages.forEach((p, i) => {
+    if (i > 0) {
+      p.style.pageBreakBefore = "always";
+      p.style.breakBefore = "page";
+    }
+    p.style.boxShadow = "none";
+    p.style.outline = "none";
+  });
+
+  sandbox.appendChild(clone);
+  document.body.appendChild(sandbox);
+
+  try {
+    const worker = (html2pdf as () => {
+      set: (opts: unknown) => { from: (el: HTMLElement) => { outputPdf: (type: string) => Promise<Blob> } };
+    })()
+      .set({
+        margin: 0,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          windowWidth: 794,
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] },
+      })
+      .from(clone);
+
+    return await worker.outputPdf("blob");
+  } finally {
+    document.body.removeChild(sandbox);
+  }
+}
+

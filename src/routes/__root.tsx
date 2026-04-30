@@ -30,14 +30,18 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Generator ugovora" },
+      { name: "description", content: "Borealis Contract Hub generates professional contracts for Borealis Agency." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Generator ugovora" },
+      { property: "og:description", content: "Borealis Contract Hub generates professional contracts for Borealis Agency." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Generator ugovora" },
+      { name: "twitter:description", content: "Borealis Contract Hub generates professional contracts for Borealis Agency." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f7003f66-a1ee-4ab9-90b5-59d7a07ca87e/id-preview-750b5f4e--7f5aa710-063d-412a-9b85-61cf5a381150.lovable.app-1777545983713.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f7003f66-a1ee-4ab9-90b5-59d7a07ca87e/id-preview-750b5f4e--7f5aa710-063d-412a-9b85-61cf5a381150.lovable.app-1777545983713.png" },
     ],
     links: [
       {

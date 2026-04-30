@@ -15,7 +15,7 @@ import {
   type ContractVars,
   type HistoryEntry,
 } from "@/lib/contract";
-import { exportDocx, exportDocxBlob, exportPdf, exportPdfBlob } from "@/lib/export";
+import { exportDocx, exportDocxBlob, exportPdf } from "@/lib/export";
 import { uploadToDrive } from "@/server/drive.functions";
 import { BRAND } from "@/lib/branding";
 import { toast } from "sonner";
@@ -130,16 +130,8 @@ function TemplatePage() {
     if (!el) return;
     const filename = `${entry.number}.pdf`;
     try {
-      // Open print dialog for user to save as PDF
       await exportPdf(el, filename);
       toast.success("Otvoren print dialog — odaberi 'Save as PDF'");
-      // In parallel, generate a real PDF blob and upload to Drive
-      try {
-        const blob = await exportPdfBlob(el);
-        await uploadFileToDrive(blob, filename, "application/pdf");
-      } catch (e) {
-        console.error("PDF blob generation failed", e);
-      }
     } catch (e) {
       console.error(e);
       toast.error("Greška pri otvaranju print prozora");
@@ -160,8 +152,7 @@ function TemplatePage() {
       // Trigger browser download
       await exportDocx(payload, filename);
       toast.success("Word dokument preuzet");
-      // Upload to Drive in background
-      await uploadFileToDrive(
+      void uploadFileToDrive(
         blob,
         filename,
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

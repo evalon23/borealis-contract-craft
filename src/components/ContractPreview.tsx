@@ -12,7 +12,13 @@ import type { ContractVars } from "@/lib/contract";
 import { fillTemplate } from "@/lib/contract";
 import { BRAND } from "@/lib/branding";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Building2, MapPin, Globe } from "lucide-react";
+
+const ICONS = {
+  building: Building2,
+  "map-pin": MapPin,
+  globe: Globe,
+} as const;
 
 interface Props {
   number: string;
@@ -30,7 +36,7 @@ export interface ContractPreviewHandle {
 const PAGE_HEIGHT_MM = 297;
 const PAGE_MARGIN_MM = 20; // top/bottom
 const HEADER_RESERVE_MM = 22; // header strip + gap
-const FOOTER_RESERVE_MM = 10; // footer line
+const FOOTER_RESERVE_MM = 16; // footer line + breathing room
 const CONTENT_HEIGHT_MM =
   PAGE_HEIGHT_MM - 2 * PAGE_MARGIN_MM - HEADER_RESERVE_MM - FOOTER_RESERVE_MM;
 
@@ -165,14 +171,20 @@ function Letterhead() {
           }}
         />
         <div className="grid flex-1 grid-cols-3 gap-4 text-right text-[8.5pt] leading-[1.15] text-neutral-700">
-          {BRAND.headerDetails.map((item) => (
-            <div key={item.title}>
-              <div className="font-semibold text-neutral-900">{item.title}</div>
-              {item.lines.map((line) => (
-                <div key={line}>{line}</div>
-              ))}
-            </div>
-          ))}
+          {BRAND.headerDetails.map((item) => {
+            const Icon = ICONS[item.icon];
+            return (
+              <div key={item.title} className="flex items-start justify-end gap-1.5">
+                <div>
+                  <div className="font-semibold text-neutral-900">{item.title}</div>
+                  {item.lines.map((line) => (
+                    <div key={line}>{line}</div>
+                  ))}
+                </div>
+                <Icon className="mt-0.5 h-3 w-3 shrink-0 text-[color:var(--primary)]" />
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -181,7 +193,7 @@ function Letterhead() {
 
 function Footer({ number }: { number: string }) {
   return (
-    <div className="mt-auto flex items-center justify-between border-t border-neutral-300 pt-1 text-[8.5pt] text-neutral-500">
+    <div className="mt-auto flex items-center justify-between border-t border-neutral-300 pt-2 mt-6 text-[8.5pt] text-neutral-500">
       <span>{BRAND.footerLine}</span>
       <span>
         Broj:{" "}

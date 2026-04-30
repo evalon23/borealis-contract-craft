@@ -7,18 +7,23 @@ export const BRAND = {
   headerImage: headerLogo,
   headerDetails: [
     {
+      icon: "building" as const,
       title: "Borealis d.o.o.",
       lines: ["development & design"],
     },
     {
+      icon: "map-pin" as const,
       title: "Ljutomerska 7",
       lines: ["10000 Zagreb"],
     },
     {
+      icon: "globe" as const,
       title: "borealis.agency",
       lines: ["info@borealis.biz"],
     },
   ],
+  /** Google Drive folder ID where exported contracts are uploaded. */
+  driveFolderId: "13SSoNhYmdu-pPUq_Bw8E9aTvCOm9_wzG",
   /** Proportions of the header image (for aspect-ratio on preview). */
   headerAspect: 1560 / 220, // width / height (approx. for the uploaded strip)
   /** Font stack used in the contract preview and exports. */

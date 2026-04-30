@@ -36,7 +36,7 @@ export interface ContractPreviewHandle {
 const PAGE_HEIGHT_MM = 297;
 const PAGE_MARGIN_MM = 20; // top/bottom
 const HEADER_RESERVE_MM = 22; // header strip + gap
-const FOOTER_RESERVE_MM = 10; // footer line
+const FOOTER_RESERVE_MM = 16; // footer line + breathing room
 const CONTENT_HEIGHT_MM =
   PAGE_HEIGHT_MM - 2 * PAGE_MARGIN_MM - HEADER_RESERVE_MM - FOOTER_RESERVE_MM;
 
@@ -193,7 +193,7 @@ function Letterhead() {
 
 function Footer({ number }: { number: string }) {
   return (
-    <div className="mt-auto flex items-center justify-between border-t border-neutral-300 pt-1 text-[8.5pt] text-neutral-500">
+    <div className="mt-auto flex items-center justify-between border-t border-neutral-300 pt-2 mt-6 text-[8.5pt] text-neutral-500">
       <span>{BRAND.footerLine}</span>
       <span>
         Broj:{" "}

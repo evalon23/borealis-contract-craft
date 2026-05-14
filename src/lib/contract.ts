@@ -1,4 +1,7 @@
 import type { TemplateId } from "./templates";
+import type { Lang } from "./i18n";
+
+export type DocKind = "contract" | "offer-simple" | "offer-detailed";
 
 export type ContractVars = {
   PARTNER_NAME: string;
@@ -53,10 +56,14 @@ export function fillTemplate(body: string, vars: ContractVars): string {
   });
 }
 
-// ===== Contract numbering =====
-const COUNTER_KEY = "borealis_contract_counter";
+// ===== Numbering: N-YY (e.g. 9-26, 44-25) =====
+const COUNTER_KEY = "paperline_doc_counter";
 
 const hasLS = () => typeof window !== "undefined" && !!window.localStorage;
+
+function yy(): string {
+  return String(new Date().getFullYear()).slice(-2);
+}
 
 export function peekNextNumber(): string {
   const year = new Date().getFullYear();
@@ -72,14 +79,14 @@ export function peekNextNumber(): string {
       }
     }
   }
-  return `BOR-${year}-${String(next).padStart(4, "0")}`;
+  return `${next}-${yy()}`;
 }
 
 export function consumeNextNumber(): string {
   const num = peekNextNumber();
   if (!hasLS()) return num;
   const year = new Date().getFullYear();
-  const n = parseInt(num.split("-")[2], 10);
+  const n = parseInt(num.split("-")[0], 10);
   localStorage.setItem(COUNTER_KEY, JSON.stringify({ year, n }));
   return num;
 }
@@ -88,14 +95,20 @@ export function consumeNextNumber(): string {
 export interface HistoryEntry {
   id: string;
   number: string;
-  templateId: TemplateId;
+  kind: DocKind;
+  lang: Lang;
+  /** Template id for contract; ignored for offers. */
+  templateId?: TemplateId;
   templateTitle: string;
   partnerName: string;
   createdAt: string;
-  vars: ContractVars;
+  /** Contract vars (when kind === 'contract'). */
+  vars?: ContractVars;
+  /** JSON payload for offers (raw form data). */
+  payload?: unknown;
 }
 
-const HISTORY_KEY = "borealis_contract_history";
+const HISTORY_KEY = "paperline_doc_history";
 
 export function loadHistory(): HistoryEntry[] {
   if (!hasLS()) return [];

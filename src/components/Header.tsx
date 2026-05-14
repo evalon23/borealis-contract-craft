@@ -1,18 +1,18 @@
 import { Link } from "@tanstack/react-router";
 import logo from "@/assets/borealis-logo-horizontal.png";
+import { APP_NAME } from "@/lib/branding";
 
 export function Header() {
   return (
     <header className="border-b bg-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center gap-3">
-          <img
-            src={logo}
-            alt="Borealis"
-            className="h-8 w-auto"
-          />
+          <img src={logo} alt="Borealis" className="h-8 w-auto" />
+          <span className="ml-1 text-base font-semibold tracking-tight">
+            {APP_NAME}
+          </span>
           <span className="ml-1 text-sm text-muted-foreground">
-            Generator ugovora
+            by Borealis
           </span>
         </Link>
         <nav className="flex items-center gap-2">

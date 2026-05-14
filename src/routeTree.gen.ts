@@ -10,12 +10,24 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PovijestRouteImport } from './routes/povijest'
+import { Route as PonudaJednostavnaRouteImport } from './routes/ponuda-jednostavna'
+import { Route as PonudaDetaljnaRouteImport } from './routes/ponuda-detaljna'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PredlozakIdRouteImport } from './routes/predlozak.$id'
 
 const PovijestRoute = PovijestRouteImport.update({
   id: '/povijest',
   path: '/povijest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PonudaJednostavnaRoute = PonudaJednostavnaRouteImport.update({
+  id: '/ponuda-jednostavna',
+  path: '/ponuda-jednostavna',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PonudaDetaljnaRoute = PonudaDetaljnaRouteImport.update({
+  id: '/ponuda-detaljna',
+  path: '/ponuda-detaljna',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -31,30 +43,54 @@ const PredlozakIdRoute = PredlozakIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ponuda-detaljna': typeof PonudaDetaljnaRoute
+  '/ponuda-jednostavna': typeof PonudaJednostavnaRoute
   '/povijest': typeof PovijestRoute
   '/predlozak/$id': typeof PredlozakIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ponuda-detaljna': typeof PonudaDetaljnaRoute
+  '/ponuda-jednostavna': typeof PonudaJednostavnaRoute
   '/povijest': typeof PovijestRoute
   '/predlozak/$id': typeof PredlozakIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ponuda-detaljna': typeof PonudaDetaljnaRoute
+  '/ponuda-jednostavna': typeof PonudaJednostavnaRoute
   '/povijest': typeof PovijestRoute
   '/predlozak/$id': typeof PredlozakIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/povijest' | '/predlozak/$id'
+  fullPaths:
+    | '/'
+    | '/ponuda-detaljna'
+    | '/ponuda-jednostavna'
+    | '/povijest'
+    | '/predlozak/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/povijest' | '/predlozak/$id'
-  id: '__root__' | '/' | '/povijest' | '/predlozak/$id'
+  to:
+    | '/'
+    | '/ponuda-detaljna'
+    | '/ponuda-jednostavna'
+    | '/povijest'
+    | '/predlozak/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/ponuda-detaljna'
+    | '/ponuda-jednostavna'
+    | '/povijest'
+    | '/predlozak/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PonudaDetaljnaRoute: typeof PonudaDetaljnaRoute
+  PonudaJednostavnaRoute: typeof PonudaJednostavnaRoute
   PovijestRoute: typeof PovijestRoute
   PredlozakIdRoute: typeof PredlozakIdRoute
 }
@@ -66,6 +102,20 @@ declare module '@tanstack/react-router' {
       path: '/povijest'
       fullPath: '/povijest'
       preLoaderRoute: typeof PovijestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ponuda-jednostavna': {
+      id: '/ponuda-jednostavna'
+      path: '/ponuda-jednostavna'
+      fullPath: '/ponuda-jednostavna'
+      preLoaderRoute: typeof PonudaJednostavnaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ponuda-detaljna': {
+      id: '/ponuda-detaljna'
+      path: '/ponuda-detaljna'
+      fullPath: '/ponuda-detaljna'
+      preLoaderRoute: typeof PonudaDetaljnaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -87,18 +137,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PonudaDetaljnaRoute: PonudaDetaljnaRoute,
+  PonudaJednostavnaRoute: PonudaJednostavnaRoute,
   PovijestRoute: PovijestRoute,
   PredlozakIdRoute: PredlozakIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

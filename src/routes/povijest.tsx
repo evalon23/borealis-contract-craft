@@ -81,13 +81,17 @@ function HistoryPage() {
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
                         <Button asChild size="sm" variant="outline">
-                          <Link
-                            to="/predlozak/$id"
-                            params={{ id: e.templateId }}
-                            search={{ edit: e.id }}
-                          >
-                            Otvori
-                          </Link>
+                          {e.kind === "offer-simple" ? (
+                            <Link to="/ponuda-jednostavna" search={{ edit: e.id }}>Otvori</Link>
+                          ) : e.kind === "offer-detailed" ? (
+                            <Link to="/ponuda-detaljna" search={{ edit: e.id }}>Otvori</Link>
+                          ) : (
+                            <Link
+                              to="/predlozak/$id"
+                              params={{ id: (e.templateId ?? "wordpress") }}
+                              search={{ edit: e.id }}
+                            >Otvori</Link>
+                          )}
                         </Button>
                         <Button
                           size="sm"

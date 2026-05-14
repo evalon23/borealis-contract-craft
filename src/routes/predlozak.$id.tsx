@@ -61,6 +61,8 @@ function TemplatePage() {
       const entry: HistoryEntry = {
         id: savedId,
         number,
+        kind: "contract",
+        lang: "hr",
         templateId: template.id,
         templateTitle: template.title,
         partnerName: vars.PARTNER_NAME || "(bez naziva)",
@@ -74,6 +76,8 @@ function TemplatePage() {
     const entry: HistoryEntry = {
       id: crypto.randomUUID(),
       number: assigned,
+      kind: "contract",
+      lang: "hr",
       templateId: template.id,
       templateTitle: template.title,
       partnerName: vars.PARTNER_NAME || "(bez naziva)",

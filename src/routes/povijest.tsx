@@ -76,7 +76,7 @@ function HistoryPage() {
                     </td>
                     <td className="px-4 py-3">{e.partnerName}</td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {templateLabel(e.templateId)}
+                      {labelFor(e)}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {new Date(e.createdAt).toLocaleDateString("hr-HR")}

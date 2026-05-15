@@ -22,8 +22,11 @@ function HistoryPage() {
     setEntries(loadHistory());
   };
 
-  const templateLabel = (id: string) =>
-    TEMPLATES.find((t) => t.id === id)?.title ?? id;
+  const labelFor = (e: HistoryEntry) => {
+    if (e.kind === "offer-simple") return "Jednostavna ponuda";
+    if (e.kind === "offer-detailed") return "Detaljna ponuda";
+    return TEMPLATES.find((t) => t.id === e.templateId)?.title ?? e.templateTitle;
+  };
 
   return (
     <div className="min-h-screen bg-white">
